@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import adapter from "webrtc-adapter";
-
-const socket = io("http://localhost:3000"); // Ensure your server is running on port 3000
+import TotalUsers from "./components/TotalUsers";
+import socket from "./utils/socket";
 
 const App = () => {
   const [theme, setTheme] = useState("dark");
@@ -215,8 +215,9 @@ const App = () => {
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <i className="ri-group-line"></i>
-            <span className="font-bold text-center">{onlineUsers}</span>
-            <span>online</span>
+            {/* <span className="font-bold text-center">{onlineUsers}</span>   */}
+            <TotalUsers />
+            <span className="font-semibold">Online</span>
           </div>
           <button
             onClick={handleskip} // Send room id with the skip event
