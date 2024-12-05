@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import adapter from "webrtc-adapter";
+
 const socket = io("http://localhost:3000"); // Ensure your server is running on port 3000
 
 const App = () => {
@@ -10,11 +11,10 @@ const App = () => {
   const messageInputRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const localFeedRef = useRef(null);
 
-  let peerConnection;
-  let dataChannel;
-  let room;
+  const peerConnectionRef = useRef(null); // Store peerConnection as a ref
+  const dataChannelRef = useRef(null); // Store dataChannel as a ref
+  const roomRef = useRef(null); // Store room name as a ref
 
   useEffect(() => {
     // Theme toggle logic
@@ -34,7 +34,7 @@ const App = () => {
     socket.emit("joinroom");
 
     socket.on("joined", (roomname) => {
-      room = roomname;
+      roomRef.current = roomname;
       console.log("Connected to room:", roomname);
       initialize();
     });
@@ -64,7 +64,7 @@ const App = () => {
   };
 
   const createPeerConnection = (stream) => {
-    peerConnection = new RTCPeerConnection({
+    const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
 
@@ -81,14 +81,15 @@ const App = () => {
     };
 
     peerConnection.ondatachannel = (event) => {
-      dataChannel = event.channel;
-      setupDataChannel();
+      console.log("DataChannel received from remote peer:", event.channel);
+      dataChannelRef.current = event.channel;
+      setupDataChannel(dataChannelRef.current);
     };
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("signalingMessage", {
-          room,
+          room: roomRef.current,
           message: JSON.stringify({
             type: "candidate",
             candidate: event.candidate,
@@ -97,22 +98,50 @@ const App = () => {
       }
     };
 
-    dataChannel = peerConnection.createDataChannel("chat");
-    setupDataChannel();
+    const dataChannel = peerConnection.createDataChannel("chat");
+    dataChannelRef.current = dataChannel;
+    setupDataChannel(dataChannel);
+
+    peerConnectionRef.current = peerConnection; // Store peerConnection in the ref
   };
 
-  const setupDataChannel = () => {
+  const setupDataChannel = (dataChannel) => {
+    dataChannel.onopen = () => {
+      console.log("DataChannel is open");
+    };
+
+    dataChannel.onclose = () => {
+      console.log("DataChannel is closed");
+    };
+
     dataChannel.onmessage = (event) => {
+      console.log("Message received:", event.data);
+
+      // Play sound for incoming message
+      playNotificationSound();
+
       setMessages((prev) => [...prev, { sender: "Remote", text: event.data }]);
     };
+
+    dataChannel.onerror = (error) => {
+      console.error("DataChannel error:", error);
+    };
+  };
+
+  const playNotificationSound = () => {
+    const audio = new Audio("/sound.mp3"); // Path to your custom sound
+    audio.play().catch((error) => {
+      console.error("Failed to play notification sound:", error);
+    });
   };
 
   const initiateOffer = async () => {
     try {
+      const peerConnection = peerConnectionRef.current;
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       socket.emit("signalingMessage", {
-        room,
+        room: roomRef.current,
         message: JSON.stringify({ type: "offer", offer }),
       });
     } catch (error) {
@@ -121,6 +150,9 @@ const App = () => {
   };
 
   const handleSignalingMessage = async (message) => {
+    console.log("Received signaling message:", message);
+
+    const peerConnection = peerConnectionRef.current;
     const { type, offer, answer, candidate } = message;
 
     if (type === "offer") {
@@ -128,7 +160,7 @@ const App = () => {
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       socket.emit("signalingMessage", {
-        room,
+        room: roomRef.current,
         message: JSON.stringify({ type: "answer", answer }),
       });
     } else if (type === "answer") {
@@ -141,7 +173,14 @@ const App = () => {
   const handleMessageSend = (e) => {
     e.preventDefault();
     const message = messageInputRef.current.value.trim();
-    if (message && dataChannel.readyState === "open") {
+    const dataChannel = dataChannelRef.current;
+
+    if (!dataChannel || dataChannel.readyState !== "open") {
+      console.error("DataChannel is not open:", dataChannel?.readyState);
+      return;
+    }
+
+    if (message) {
       dataChannel.send(message);
       setMessages((prev) => [...prev, { sender: "You", text: message }]);
       messageInputRef.current.value = "";
@@ -159,7 +198,7 @@ const App = () => {
             <span>online</span>
           </div>
           <button
-            onClick={() => socket.emit("skip", room)}
+            onClick={() => socket.emit("skip", roomRef.current)}
             className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
           >
             Skip
@@ -184,10 +223,7 @@ const App = () => {
               autoPlay
               playsInline
             ></video>
-            <div
-              className="localfeed absolute bottom-2 right-2 w-24 h-16 lg:w-[150px] lg:h-[100px] border-2 border-white rounded overflow-hidden bg-black/50"
-              ref={localFeedRef}
-            >
+            <div className="localfeed absolute bottom-2 right-2 w-24 h-16 lg:w-[150px] lg:h-[100px] border-2 border-white rounded overflow-hidden bg-black/50">
               <div className="you-label absolute top-1 left-1 bg-black/70 text-white px-2 py-1 rounded text-xs">
                 YOU
               </div>
@@ -209,26 +245,30 @@ const App = () => {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`p-2 my-1 rounded-md ${
-                  msg.sender === "You"
-                    ? "bg-blue-300 text-right"
-                    : "bg-zinc-300 text-left"
+                className={`flex ${
+                  msg.sender === "You" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.text}
+                <span
+                  className={`bg-${
+                    msg.sender === "You" ? "blue-500" : "gray-300"
+                  } text-white px-3 py-1 rounded mb-1`}
+                >
+                  {msg.text}
+                </span>
               </div>
             ))}
           </div>
-          <form onSubmit={handleMessageSend} className="flex mt-4">
+          <form onSubmit={handleMessageSend} className="mt-2 flex">
             <input
               type="text"
               ref={messageInputRef}
-              className="flex-grow px-2 py-1 border rounded bg-white text-gray-800 dark:bg-gray-600 dark:text-white text-sm lg:text-base"
-              placeholder="Type a message..."
+              className="flex-grow p-2 border rounded-l text-black"
+              placeholder="Type your message..."
             />
             <button
               type="submit"
-              className="bg-blue-500 px-3 lg:px-4 py-1 text-white hover:bg-blue-400 rounded text-sm lg:text-base ml-2"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded-r"
             >
               Send
             </button>
