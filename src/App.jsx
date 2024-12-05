@@ -42,7 +42,16 @@ const App = () => {
     socket.on("signalingMessage", (message) => {
       handleSignalingMessage(JSON.parse(message));
     });
-
+    socket.on("leave",()=>{
+      cleanvideo_messages();
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close(); // Close the peer connection
+        peerConnectionRef.current = null; // Clear the reference
+      }
+      console.log("User left the room");
+      // to reconnect
+      socket.emit("joinroom");
+    })
     return () => {
       socket.disconnect();
     };
@@ -62,6 +71,18 @@ const App = () => {
       console.error("Error accessing media devices:", error);
     }
   };
+
+  const cleanvideo_messages = () => {
+  
+  // localVideoRef.current.srcObject = null; // Reset local video feed
+  remoteVideoRef.current.srcObject = new MediaStream(); // Reset remote video feed
+  // Assuming there's a state or ref to hold messages
+  setMessages([]); // Clear messages if using state
+  }
+
+  const handleskip = () => {
+    socket.emit("skipped", roomRef.current ); // Send room id with the skip event
+  } 
 
   const createPeerConnection = (stream) => {
     const peerConnection = new RTCPeerConnection({
@@ -198,7 +219,7 @@ const App = () => {
             <span>online</span>
           </div>
           <button
-            onClick={() => socket.emit("skip", roomRef.current)}
+            onClick={handleskip} // Send room id with the skip event
             className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
           >
             Skip
