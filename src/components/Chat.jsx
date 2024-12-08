@@ -28,16 +28,16 @@ const Chat = () => {
   }, [theme]);
 
   useEffect(() => {
-    socket.on("totalUsers", (count) => {
-      setOnlineUsers(count);
-    });
-
     socket.emit("joinroom");
 
     socket.on("joined", (roomname) => {
       roomRef.current = roomname;
       console.log("Connected to room:", roomname);
       initialize();
+    });
+
+    socket.on("totalUsers", (count) => {
+      setOnlineUsers(count); // Update online users count
     });
 
     socket.on("signalingMessage", (message) => {
@@ -79,9 +79,7 @@ const Chat = () => {
   };
 
   const cleanvideo_messages = () => {
-    // localVideoRef.current.srcObject = null; // Reset local video feed
     remoteVideoRef.current.srcObject = new MediaStream(); // Reset remote video feed
-    // Assuming there's a state or ref to hold messages
     setMessages([]); // Clear messages if using state
   };
 
@@ -220,8 +218,7 @@ const Chat = () => {
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <i className="ri-group-line"></i>
-            {/* <span className="font-bold text-center">{onlineUsers}</span>   */}
-            <TotalUsers />
+            <span className="font-bold text-center">{onlineUsers}</span> {/* Display total online users */}
             <span className="font-semibold">Online</span>
           </div>
           <button
