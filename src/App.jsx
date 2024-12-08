@@ -11,6 +11,7 @@ const App = () => {
   const messageInputRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const messagesEndRef = useRef(null); // Ref for scrolling to the bottom
 
   const peerConnectionRef = useRef(null); // Store peerConnection as a ref
   const dataChannelRef = useRef(null); // Store dataChannel as a ref
@@ -42,7 +43,7 @@ const App = () => {
     socket.on("signalingMessage", (message) => {
       handleSignalingMessage(JSON.parse(message));
     });
-    socket.on("leave",()=>{
+    socket.on("leave", () => {
       cleanvideo_messages();
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close(); // Close the peer connection
@@ -51,11 +52,16 @@ const App = () => {
       console.log("User left the room");
       // to reconnect
       socket.emit("joinroom");
-    })
+    });
     return () => {
       socket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    // Scroll to the bottom of the messages when a new message is received
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const initialize = async () => {
     try {
@@ -73,16 +79,15 @@ const App = () => {
   };
 
   const cleanvideo_messages = () => {
-  
-  // localVideoRef.current.srcObject = null; // Reset local video feed
-  remoteVideoRef.current.srcObject = new MediaStream(); // Reset remote video feed
-  // Assuming there's a state or ref to hold messages
-  setMessages([]); // Clear messages if using state
-  }
+    // localVideoRef.current.srcObject = null; // Reset local video feed
+    remoteVideoRef.current.srcObject = new MediaStream(); // Reset remote video feed
+    // Assuming there's a state or ref to hold messages
+    setMessages([]); // Clear messages if using state
+  };
 
   const handleskip = () => {
-    socket.emit("skipped", roomRef.current ); // Send room id with the skip event
-  } 
+    socket.emit("skipped", roomRef.current); // Send room id with the skip event
+  };
 
   const createPeerConnection = (stream) => {
     const peerConnection = new RTCPeerConnection({
@@ -273,13 +278,14 @@ const App = () => {
               >
                 <span
                   className={`bg-${
-                    msg.sender === "You" ? "blue-500" : "gray-300"
+                    msg.sender === "You" ? "blue-500" : "zinc-400"
                   } text-white px-3 py-1 rounded mb-1`}
                 >
                   {msg.text}
                 </span>
               </div>
             ))}
+            <div ref={messagesEndRef} /> {/* Empty div for scrolling */}
           </div>
           <form onSubmit={handleMessageSend} className="mt-2 flex">
             <input
