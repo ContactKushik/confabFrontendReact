@@ -214,7 +214,7 @@ const App = () => {
   };
 
   return (
-    <div className="dark bg-gray-900 text-gray-100 h-screen">
+    <div className="dark:bg-gray-900 text-gray-100 h-screen bg-zinc-400">
       <header className="flex justify-between items-center py-2 px-5 bg-gray-800 text-white text-xl">
         <h1 className="font-bold text-lg sm:text-xl">CONFAB</h1>
         <div className="flex items-center gap-1 sm:gap-2">
@@ -268,7 +268,7 @@ const App = () => {
           <h1 className="bg-gray-200 dark:bg-gray-700 p-3 lg:p-4 rounded mb-2 text-black dark:text-white text-base lg:text-xl">
             Chat
           </h1>
-          <div className="messages flex-grow overflow-auto p-3 bg-white dark:bg-gray-700 rounded text-black dark:text-white">
+          <div className="messages flex-grow overflow-auto p-3 bg-zinc-200 dark:bg-gray-700 rounded text-black dark:text-white">
             {messages.map((msg, index) => (
               <div
                 key={index}
