@@ -3,8 +3,10 @@ import io from "socket.io-client";
 import adapter from "webrtc-adapter";
 import TotalUsers from "./TotalUsers";
 import socket from "../utils/socket";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const Chat = () => {
+  const navigate = useNavigate(); // Initialize navigate
   const [theme, setTheme] = useState("dark");
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [messages, setMessages] = useState([]);
@@ -85,6 +87,12 @@ const Chat = () => {
 
   const handleskip = () => {
     socket.emit("skipped", roomRef.current); // Send room id with the skip event
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Remove token from local storage
+    localStorage.removeItem("loggedInUser"); // Remove loggedInUser from local storage
+    navigate("/login"); // Redirect to login
   };
 
   const createPeerConnection = (stream) => {
@@ -226,6 +234,12 @@ const Chat = () => {
             className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
           >
             Skip
+          </button>
+          <button
+            onClick={handleLogout} // Logout button
+            className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base ml-2"
+          >
+            Logout
           </button>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
