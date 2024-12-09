@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import adapter from "webrtc-adapter";
 import TotalUsers from "./TotalUsers";
-import socket from "../utils/socket";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
+
+const socket = io("http://localhost:3000"); // Initialize socket here
 
 const Chat = () => {
   const navigate = useNavigate(); // Initialize navigate
@@ -30,7 +31,12 @@ const Chat = () => {
   }, [theme]);
 
   useEffect(() => {
-    socket.emit("joinroom");
+    // Prevent sending connect request on refresh
+    const joinRoom = () => {
+      socket.emit("joinroom");
+    };
+
+    joinRoom();
 
     socket.on("joined", (roomname) => {
       roomRef.current = roomname;
