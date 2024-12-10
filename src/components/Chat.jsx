@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
+// import io from "socket.io-client";
 import adapter from "webrtc-adapter";
 import TotalUsers from "./TotalUsers";
 import socket from "../utils/socket";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const Chat = () => {
   const [theme, setTheme] = useState("dark");
@@ -16,6 +17,7 @@ const Chat = () => {
   const peerConnectionRef = useRef(null); // Store peerConnection as a ref
   const dataChannelRef = useRef(null); // Store dataChannel as a ref
   const roomRef = useRef(null); // Store room name as a ref
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     // Theme toggle logic
@@ -28,7 +30,10 @@ const Chat = () => {
   }, [theme]);
 
   useEffect(() => {
-    socket.emit("joinroom");
+    // Check if socket is already connected
+    if (!socket.connected) {
+      socket.emit("joinroom");
+    }
 
     socket.on("joined", (roomname) => {
       roomRef.current = roomname;
@@ -54,9 +59,12 @@ const Chat = () => {
       socket.emit("joinroom");
     });
     return () => {
+      
       socket.disconnect();
     };
   }, []);
+
+  // yeh poore page ko re render nhi karayega bs jo messages mein change hoga toh sirf iske andar jo likha h woh karega
 
   useEffect(() => {
     // Scroll to the bottom of the messages when a new message is received
@@ -85,6 +93,12 @@ const Chat = () => {
 
   const handleskip = () => {
     socket.emit("skipped", roomRef.current); // Send room id with the skip event
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("loggedInUser");
+    navigate("/"); // Redirect to the root route without reloading
   };
 
   const createPeerConnection = (stream) => {
@@ -226,6 +240,12 @@ const Chat = () => {
             className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
           >
             Skip
+          </button>
+          <button
+            onClick={handleLogout} // Logout button
+            className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
+          >
+            Logout
           </button>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

@@ -1,21 +1,38 @@
-import React from 'react'
-import Chat from './components/Chat'
+import React, { useState, lazy, Suspense } from 'react';
 
-import { Navigate, Route, Routes } from 'react-router-dom'
+const Chat = lazy(() => import('./components/Chat'));
+
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import "react-toastify/dist/ReactToastify.css";
-
+import RefrshHandler from './RefrshHandler';
 
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const PrivateRoute = ({ element }) => {
+    return isAuthenticated ? element : <Navigate to="/login" />;
+  };
+
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<Login />}></Route>
-      <Route path="/signup" element={<Signup />}></Route>
-      <Route path="/chat" element={<Chat />}></Route>
-    </Routes>
+    <>
+      <RefrshHandler setIsAuthenticated={setIsAuthenticated} />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route 
+          path="/chat" 
+          element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <PrivateRoute element={<Chat />} />
+            </Suspense>
+          } 
+        />
+      </Routes>
+    </>
   );
 }
 
-export default App
+export default App;
