@@ -19,6 +19,8 @@ const Chat = () => {
   const roomRef = useRef(null); // Store room name as a ref
   const navigate = useNavigate(); // Initialize useNavigate
 
+  const [skipButtonColor, setSkipButtonColor] = useState("bg-red-500"); // State for skip button color
+
   useEffect(() => {
     // Theme toggle logic
     const body = document.body;
@@ -38,6 +40,7 @@ const Chat = () => {
     socket.on("joined", (roomname) => {
       roomRef.current = roomname;
       console.log("Connected to room:", roomname);
+      setSkipButtonColor("bg-blue-500"); // Change skip button color to blue
       initialize();
     });
 
@@ -55,11 +58,11 @@ const Chat = () => {
         peerConnectionRef.current = null; // Clear the reference
       }
       console.log("User left the room");
+      setSkipButtonColor("bg-red-500 cursor-not-allowed"); // Change skip button color to red and set cursor
       // to reconnect
       socket.emit("joinroom");
     });
     return () => {
-      
       socket.disconnect();
     };
   }, []);
@@ -92,7 +95,10 @@ const Chat = () => {
   };
 
   const handleskip = () => {
-    socket.emit("skipped", roomRef.current); // Send room id with the skip event
+    if(peerConnectionRef.current){
+      socket.emit("skipped", roomRef.current);
+    }
+     // Send room id with the skip event
   };
 
   const handleLogout = () => {
@@ -237,7 +243,8 @@ const Chat = () => {
           </div>
           <button
             onClick={handleskip} // Send room id with the skip event
-            className="bg-red-500 font-semibold text-white px-2 py-1 rounded text-sm sm:text-base"
+            className={`${skipButtonColor} font-semibold text-white px-2 py-1 rounded text-sm sm:text-base`}
+            disabled={!roomRef.current} // Disable button if no room
           >
             Skip
           </button>
