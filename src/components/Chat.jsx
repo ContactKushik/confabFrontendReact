@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-// import io from "socket.io-client";
 import adapter from "webrtc-adapter";
 import TotalUsers from "./TotalUsers";
 import socket from "../utils/socket";
@@ -32,8 +31,10 @@ const Chat = () => {
   }, [theme]);
 
   useEffect(() => {
-    // Check if socket is already connected
+    // Connect socket if not already connected
     if (!socket.connected) {
+      console.log("socket connect hua");
+      socket.connect();
       socket.emit("joinroom");
     }
 
@@ -51,6 +52,7 @@ const Chat = () => {
     socket.on("signalingMessage", (message) => {
       handleSignalingMessage(JSON.parse(message));
     });
+    
     socket.on("leave", () => {
       cleanvideo_messages();
       if (peerConnectionRef.current) {
@@ -62,12 +64,13 @@ const Chat = () => {
       // to reconnect
       socket.emit("joinroom");
     });
+
     return () => {
-      socket.disconnect();
+      console.log("socket disconnected");
+      socket.disconnect(true); // Disconnect socket on cleanup
+       // Clean up video and messages
     };
   }, []);
-
-  // yeh poore page ko re render nhi karayega bs jo messages mein change hoga toh sirf iske andar jo likha h woh karega
 
   useEffect(() => {
     // Scroll to the bottom of the messages when a new message is received
