@@ -62,7 +62,9 @@ const Chat = () => {
       console.log("User left the room");
       setSkipButtonColor("bg-red-500 cursor-not-allowed"); // Change skip button color to red and set cursor
       // to reconnect
-      socket.emit("joinroom");
+      setTimeout(() => {
+        socket.emit("joinroom");
+      }, 100);
     });
 
     return () => {
