@@ -20,7 +20,7 @@ const Login = () => {
     setLoading(true); // Set loading to true when the request starts
 
     try {
-      const url = "http://localhost:3000/auth/login";
+      const url = `${import.meta.env.VITE_BACKEND_URL}/auth/login`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
