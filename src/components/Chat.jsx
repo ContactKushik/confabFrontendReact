@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-// import io from "socket.io-client";
 import adapter from "webrtc-adapter";
-import TotalUsers from "./TotalUsers";
 import socket from "../utils/socket";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 
@@ -34,38 +32,51 @@ const Chat = () => {
   useEffect(() => {
     // Check if socket is already connected
     if (!socket.connected) {
+      console.log("Socket not connected, connecting...");
+      socket.connect();
       socket.emit("joinroom");
     }
+    
+      socket.on("joined", (roomname) => {
+        roomRef.current = roomname;
+        console.log("Connected to room:", roomname);
+        setSkipButtonColor("bg-blue-500"); // Change skip button color to blue
+        initialize();
+      });
 
-    socket.on("joined", (roomname) => {
-      roomRef.current = roomname;
-      console.log("Connected to room:", roomname);
-      setSkipButtonColor("bg-blue-500"); // Change skip button color to blue
-      initialize();
-    });
+      socket.on("totalUsers", (count) => {
+        setOnlineUsers(count); // Update online users count
+      });
 
-    socket.on("totalUsers", (count) => {
-      setOnlineUsers(count); // Update online users count
-    });
-
-    socket.on("signalingMessage", (message) => {
-      handleSignalingMessage(JSON.parse(message));
-    });
-    socket.on("leave", () => {
-      cleanvideo_messages();
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close(); // Close the peer connection
-        peerConnectionRef.current = null; // Clear the reference
-      }
-      console.log("User left the room");
-      setSkipButtonColor("bg-red-500 cursor-not-allowed"); // Change skip button color to red and set cursor
-      // to reconnect
-      socket.emit("joinroom");
-    });
-    return () => {
+      socket.on("signalingMessage", (message) => {
+        handleSignalingMessage(JSON.parse(message));
+      });
+      socket.on("leave", () => {
+        cleanvideo_messages();
+        if (peerConnectionRef.current) {
+          peerConnectionRef.current.close(); // Close the peer connection
+          peerConnectionRef.current = null; // Clear the reference
+        }
+        console.log("User left the room");
+        setSkipButtonColor("bg-red-500 cursor-not-allowed"); // Change skip button color to red and set cursor
+        // to reconnect
+        socket.emit("joinroom");
+      });
+    
+    // Cleanup function to disconnect socket on refresh
+    const handleBeforeUnload = () => {
       socket.disconnect();
     };
-  }, []);
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      socket.off();
+      console.log("socket disconnected");
+      socket.disconnect();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [socket]);
 
   // yeh poore page ko re render nhi karayega bs jo messages mein change hoga toh sirf iske andar jo likha h woh karega
 
