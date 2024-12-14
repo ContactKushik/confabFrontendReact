@@ -62,7 +62,14 @@ const Chat = () => {
         // to reconnect
         socket.emit("joinroom");
       });
-    
+      socket.on("logout",()=>{
+      // Stop using media devices
+      if (localVideoRef.current && localVideoRef.current.srcObject) {
+        const tracks = localVideoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop()); // Stop all tracks
+      }
+      roomRef.current = null; // Clear the reference
+      })
     // Cleanup function to disconnect socket on refresh
     const handleBeforeUnload = () => {
       socket.disconnect();
@@ -76,7 +83,7 @@ const Chat = () => {
       socket.disconnect();
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [socket]);
+  }, []);
 
   // yeh poore page ko re render nhi karayega bs jo messages mein change hoga toh sirf iske andar jo likha h woh karega
 
@@ -113,6 +120,12 @@ const Chat = () => {
   };
 
   const handleLogout = () => {
+    // socket.emit("skipped",roomRef.current);
+    cleanvideo_messages();
+    socket.emit("skipped",roomRef.current);
+    console.log("handleLogout");
+    socket.emit("logout",roomRef.current);
+    socket.disconnect(true);
     localStorage.removeItem("token");
     localStorage.removeItem("loggedInUser");
     navigate("/"); // Redirect to the root route without reloading

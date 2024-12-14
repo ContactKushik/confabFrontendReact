@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_BACKEND_URL, {
   autoConnect: false,
-  reconnection: false, // Disables automatic reconnection attempts
+  // Disables automatic reconnection attempts
   transports: ["websocket"],
 }); // Replace with your server URL
 export default socket;
