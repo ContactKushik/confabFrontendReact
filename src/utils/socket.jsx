@@ -1,7 +1,7 @@
 // socket.js
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3000", {
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
   autoConnect: false,
   reconnection: false, // Disables automatic reconnection attempts
   transports: ["websocket"],
